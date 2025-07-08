@@ -42,7 +42,24 @@ pub mod blueshift_anchor_vault {
     pub fn withdraw(ctx: Context<VaultAction>) -> Result<()> {
         // withdraw
 
-        
+        // check if vault has any lammports
+        require_gt!(ctx.accounts.vault.lamports(), 0, VaultError::InvalidAmount);
+
+        let signer_key = ctx.accounts.signer.key();
+        let seeds = &[b"vault", signer_key.as_ref(), &[ctx.bumps.vault]];
+
+        // transfer lamports from vault to signer
+        transfer(
+            CpiContext::new_with_signer(
+                ctx.accounts.system_prgram.to_account_info(),
+                Transfer {
+                    from: ctx.accounts.vault.to_account_info(),
+                    to: ctx.accounts.signer.to_account_info(),
+                },
+                &[seeds],
+            ),
+            ctx.accounts.vault.lamports(),
+        )?;
 
         Ok(())
     }
